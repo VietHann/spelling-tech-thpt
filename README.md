@@ -10,9 +10,9 @@
 [![Made by AIoTLab](https://img.shields.io/badge/Made%20by%20AIoTLab-blue?style=for-the-badge)](https://fit.dainam.edu.vn)
 [![Faculty of IT](https://img.shields.io/badge/Faculty%20of%20Information%20Technology-green?style=for-the-badge)](https://fit.dainam.edu.vn)
 [![DaiNam University](https://img.shields.io/badge/DaiNam%20University-red?style=for-the-badge)](https://dainam.edu.vn)
+</div>
 
 # Ứng dụng công nghệ số trong việc cải thiện lỗi chính tả của học sinh THPT
-
 ## Tổng quan
 
 Hệ thống sửa lỗi chính tả tiếng Việt tự động sử dụng học sâu và xử lý ngôn ngữ tự nhiên, được thiết kế theo kiến trúc đa tầng với khả năng phát hiện và sửa lỗi chính xác cao.
@@ -209,5 +209,5 @@ Khoa Công Nghệ Thông Tin, Trường Đại Học Đại Nam
 
 ---
 
-**Made with ❤️ for Vietnamese education**
+**Made with ❤️ for CatHann*
 

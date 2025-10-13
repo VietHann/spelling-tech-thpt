@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VN OCR + Spell Correction</title>
+  <style>
+    body {
+      box-sizing: border-box; margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100%; color: #2c3e50;
+    }
+    * { box-sizing: border-box; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* Header */
+    .header {
+      text-align: center; margin-bottom: 40px; background: white; padding: 30px;
+      border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: slideDown 0.8s ease-out;
+    }
+    .header h1 {
+      margin: 0 0 10px 0; font-size: 2.5rem; font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .header p { margin: 0; color: #7f8c8d; font-size: 1.1rem; }
+
+    /* Tab nav */
+    .tab-nav {
+      display: flex; background: white; border-radius: 15px; padding: 8px; margin-bottom: 30px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1); animation: slideUp 0.8s ease-out 0.2s both;
+    }
+    .tab-btn {
+      flex: 1; padding: 15px 20px; border: none; background: transparent; border-radius: 10px;
+      font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; color: #7f8c8d;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    }
+    .tab-btn:hover:not(.active) { background: #f8f9fa; transform: translateY(-1px); }
+
+    /* Content & cards */
+    .tab-content { display: none; animation: fadeIn 0.5s ease-out; }
+    .tab-content.active { display: block; }
+    .card {
+      background: white; border-radius: 20px; padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px; animation: slideUp 0.8s ease-out 0.4s both;
+    }
+    .card h2 {
+      margin: 0 0 25px 0; font-size: 1.5rem; color: #2c3e50; display: flex; align-items: center; gap: 10px;
+    }
+    .card h2::before { content: ''; width: 4px; height: 30px; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); border-radius: 2px; }
+
+    /* Upload */
+    .upload-section { margin-bottom: 25px; }
+    .file-input-wrapper { position: relative; display: inline-block; margin-bottom: 15px; }
+    .file-input { display: none; }
+    .file-input-label {
+      display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px;
+      background: linear-gradient(135deg,#667eea 0%, #764ba2 100%); color: white; border-radius: 10px;
+      cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+    }
+    .file-input-label:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+    .file-input-label::before { content: '📁'; font-size: 1.2rem; }
+
+    .action-btn {
+      padding: 12px 24px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white;
+      border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(46,204,113,0.3); margin-left: 15px;
+    }
+    .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46,204,113,0.4); }
+    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Parameters */
+    .params {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px; margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 15px; border: 2px dashed #e9ecef;
+    }
+    .param { display: flex; flex-direction: column; gap: 8px; }
+    .param label { font-weight: 600; color: #495057; font-size: 0.9rem; }
+    .param input {
+      padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease;
+    }
+    .param input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+
+    /* Preview */
+    .preview { margin: 20px 0; text-align: center; opacity: 0; transform: translateY(20px); transition: all 0.5s ease; }
+    .preview.show { opacity: 1; transform: translateY(0); }
+    .preview img { max-width: 100%; max-height: 300px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+
+    /* Results */
+    .result { margin: 25px 0; opacity: 0; transform: translateY(20px); transition: all 0.5s ease; }
+    .result.show { opacity: 1; transform: translateY(0); }
+    .result h3 {
+      margin: 0 0 15px 0; color: #2c3e50; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result pre {
+      background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;
+      font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; line-height: 1.5;
+    }
+    .btn-group { display: flex; gap: 10px; }
+    .btn-secondary {
+      padding: 8px 16px; background: transparent; color: #667eea; border: 2px solid #667eea; border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;
+    }
+    .btn-secondary:hover { background: #667eea; color: white; transform: translateY(-1px); }
+
+    /* Manual input */
+    .manual-input {
+      width: 100%; padding: 20px; border: 2px solid #e9ecef; border-radius: 15px; font-size: 1rem;
+      font-family: inherit; resize: vertical; min-height: 150px; transition: all 0.3s ease;
+    }
+    .manual-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.95); display: none; justify-content: center; align-items: center;
+      z-index: 1000; backdrop-filter: blur(5px);
+    }
+    .loading-overlay.show { display: flex; }
+    .spinner { text-align: center; }
+    .spinner-circle {
+      width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%;
+      animation: spin 1s linear infinite; margin: 0 auto 20px;
+    }
+    .spinner-text { font-size: 1.1rem; color: #667eea; font-weight: 600; }
+
+    /* Error */
+    .error { background: #fee; color: #c33; padding: 15px; border-radius: 10px; border-left: 4px solid #e74c3c; margin: 15px 0; display: none; }
+    .error.show { display: block; animation: shake 0.5s ease-in-out; }
+
+    /* Diff & Flags */
+    .diff {
+      background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #f39c12;
+      font-family: 'Courier New', monospace; line-height: 1.6; white-space: pre-wrap;
+    }
+    .diff .add { background: #e8f5e9; border-bottom: 2px solid #2ecc71; padding: 0 2px; border-radius: 3px; }
+    .diff .del { background: #ffebee; color: #c0392b; text-decoration: line-through; padding: 0 2px; border-radius: 3px; }
+    .flags {
+      background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #e74c3c;
+      font-family: 'Courier New', monospace; line-height: 1.6; white-space: pre-wrap;
+    }
+    .flags .flag { background: #fff3cd; border-bottom: 2px solid #f39c12; padding: 0 2px; border-radius: 3px; }
+
+    .hidden { display: none !important; }
+
+    /* Animations */
+    @keyframes slideDown { from {opacity:0; transform:translateY(-30px)} to {opacity:1; transform:translateY(0)} }
+    @keyframes slideUp { from {opacity:0; transform:translateY(30px)} to {opacity:1; transform:translateY(0)} }
+    @keyframes fadeIn { from {opacity:0} to {opacity:1} }
+    @keyframes spin { 0% {transform: rotate(0)} 100% {transform: rotate(360deg)} }
+    @keyframes shake { 0%,100% {transform: translateX(0)} 25% {transform: translateX(-5px)} 75% {transform: translateX(5px)} }
+
+    @media (max-width: 768px) {
+      .container { padding: 15px; }
+      .header h1 { font-size: 2rem; }
+      .params { grid-template-columns: 1fr; }
+      .tab-btn { font-size: 1rem; padding: 12px 15px; }
+      .card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>VN OCR + Spell Correction</h1>
+      <p>Công cụ OCR và sửa chính tả tiếng Việt thông minh</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="ocr">📷 OCR từ ảnh</button>
+      <button class="tab-btn" data-tab="manual">✏️ Sửa văn bản</button>
+    </div>
+
+    <!-- OCR Tab -->
+    <div class="tab-content active" id="ocr-tab">
+      <div class="card">
+        <h2>OCR từ ảnh và sửa chính tả</h2>
+
+        <div class="upload-section">
+          <div class="file-input-wrapper">
+            <input id="imageInput" type="file" accept="image/*" class="file-input" />
+            <label for="imageInput" class="file-input-label">Chọn ảnh</label>
+          </div>
+          <button id="runOcrBtn" class="action-btn" disabled>🚀 Chạy OCR + Sửa lỗi</button>
+        </div>
+
+        <div class="params">
+          <div class="param">
+            <label>Ngưỡng phát hiện: <span id="thresVal">0.5</span></label>
+            <input id="thres" type="range" min="0" max="1" step="0.05" value="0.5" />
+          </div>
+          <div class="param">
+            <label>Beam size</label>
+            <input id="beam" type="number" value="6" min="1" max="10" />
+          </div>
+          <div class="param">
+            <label>Max tokens</label>
+            <input id="maxNew" type="number" value="64" min="16" max="256" />
+          </div>
+          <div class="param">
+            <label>Rerank lambda</label>
+            <input id="rerank" type="number" value="0.6" step="0.1" min="0" max="2" />
+          </div>
+        </div>
+
+        <div id="preview" class="preview">
+          <img id="previewImg" alt="Xem trước ảnh" />
+        </div>
+
+        <div id="ocrResult" class="result">
+          <h3>📝 Văn bản OCR</h3>
+          <pre id="ocrText"></pre>
+        </div>
+
+        <div id="correctedResult" class="result">
+          <h3>
+            ✨ Văn bản đã sửa
+            <div class="btn-group">
+              <button id="copyBtn" class="btn-secondary">📋 Copy</button>
+              <button id="downloadBtn" class="btn-secondary">💾 Tải .txt</button>
+            </div>
+          </h3>
+          <pre id="correctedText"></pre>
+        </div>
+
+        <div id="diffResult" class="result">
+          <h3>🔍 So sánh thay đổi</h3>
+          <div id="diffBox" class="diff"></div>
+        </div>
+
+        <div id="flagsResult" class="result">
+          <h3>⚠️ Vị trí nghi ngờ lỗi</h3>
+          <div id="flagsBox" class="flags"></div>
+        </div>
+
+        <div id="ocrError" class="error"></div>
+      </div>
+    </div>
+
+    <!-- Manual Tab -->
+    <div class="tab-content" id="manual-tab">
+      <div class="card">
+        <h2>Sửa chính tả văn bản</h2>
+
+        <textarea id="manualInput" class="manual-input" placeholder="Nhập hoặc dán văn bản tiếng Việt cần sửa chính tả vào đây..."></textarea>
+
+        <div style="margin-top: 20px;">
+          <button id="runManualBtn" class="action-btn">✨ Sửa chính tả</button>
+        </div>
+
+        <div id="manualOut" class="result">
+          <h3>📝 Kết quả đã sửa</h3>
+          <pre id="manualText"></pre>
+        </div>
+
+        <!-- NEW: Manual diff section -->
+        <div id="manualDiffResult" class="result">
+          <h3>🔍 So sánh thay đổi</h3>
+          <div id="manualDiffBox" class="diff"></div>
+        </div>
+
+        <div id="manualError" class="error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner">
+      <div class="spinner-circle"></div>
+      <div class="spinner-text">Đang xử lý, vui lòng đợi...</div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Helpers ---------- */
+    const $ = (s) => document.querySelector(s);
+    const show = (id) => document.getElementById(id).classList.add('show');
+    const hide = (id) => document.getElementById(id).classList.remove('show');
+    const showLoading = () => $('#loadingOverlay').classList.add('show');
+    const hideLoading = () => $('#loadingOverlay').classList.remove('show');
+    const showError = (elId, msg) => { const el = $('#'+elId); el.textContent = msg; el.classList.add('show'); };
+
+    /* ---------- DOM refs ---------- */
+    const imageInput   = $("#imageInput");
+    const runOcrBtn    = $("#runOcrBtn");
+    const thres        = $("#thres");
+    const thresVal     = $("#thresVal");
+    const beam         = $("#beam");
+    const maxNew       = $("#maxNew");
+    const rerank       = $("#rerank");
+
+    const preview      = $("#preview");
+    const previewImg   = $("#previewImg");
+    const ocrText      = $("#ocrText");
+    const correctedText= $("#correctedText");
+    const diffBox      = $("#diffBox");
+    const flagsBox     = $("#flagsBox");
+    const ocrError     = $("#ocrError");
+
+    const copyBtn      = $("#copyBtn");
+    const downloadBtn  = $("#downloadBtn");
+
+    const manualInput  = $("#manualInput");
+    const runManualBtn = $("#runManualBtn");
+    const manualOutBox = $("#manualOut");
+    const manualText   = $("#manualText");
+    const manualError  = $("#manualError");
+    const manualDiffBox= $("#manualDiffBox");
+
+    /* ---------- State ---------- */
+    let lastOcr = "";
+    let lastCorrect = "";
+    let lastFlags = [];
+
+    /* ---------- Tabs ---------- */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
+      });
+    });
+
+    /* ---------- Inputs ---------- */
+    thres.addEventListener("input", () => (thresVal.textContent = thres.value));
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (file) {
+        runOcrBtn.disabled = false;
+        const url = URL.createObjectURL(file);
+        previewImg.src = url;
+        preview.classList.add("show");
+      } else {
+        runOcrBtn.disabled = true;
+        preview.classList.remove("show");
+      }
+    });
+
+    /* ---------- Actions: OCR ---------- */
+    runOcrBtn.addEventListener("click", async () => {
+      resetOcrUI();
+      const file = imageInput.files?.[0];
+      if (!file) return;
+
+      showLoading();
+      try {
+        const fd = new FormData();
+        fd.append("image", file);
+        fd.append("det_thres", thres.value);
+        fd.append("beam_size", beam.value);
+        fd.append("max_new_tokens", maxNew.value);
+        fd.append("rerank_lambda", rerank.value);
+
+        const res = await fetch("/ocr-correct", { method: "POST", body: fd });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        lastOcr     = data.ocr_text || data.ocr || "";
+        lastCorrect = data.corrected?.final ?? data.final ?? "";
+        lastFlags   = data.corrected?.flagged_positions ?? data.flagged_positions ?? [];
+
+        ocrText.textContent       = lastOcr;
+        correctedText.textContent = lastCorrect;
+
+        show("ocrResult"); show("correctedResult");
+
+        renderDiff(lastOcr, lastCorrect);
+        show("diffResult");
+
+        renderFlags(lastOcr, lastFlags);
+        show("flagsResult");
+      } catch (e) {
+        showError("ocrError", "Lỗi: " + (e?.message || e));
+      } finally {
+        hideLoading();
+      }
+    });
+
+    /* ---------- Actions: Manual ---------- */
+    runManualBtn.addEventListener("click", async () => {
+      manualError.classList.remove("show");
+      hide("manualOut"); hide("manualDiffResult");
+      manualText.textContent = ""; manualDiffBox.innerHTML = "";
+
+      const original = manualInput.value.trim();
+      if (!original) {
+        showError("manualError", "Vui lòng nhập văn bản cần sửa chính tả");
+        return;
+      }
+
+      showLoading();
+      try {
+        const res = await fetch("/correct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: original,
+            det_thres: parseFloat(thres.value),
+            beam_size: parseInt(beam.value, 10),
+            max_new_tokens: parseInt(maxNew.value, 10),
+            rerank_lambda: parseFloat(rerank.value)
+          })
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const corrected = data.final || data.corrected?.final || "";
+
+        manualText.textContent = corrected;
+        show("manualOut");
+
+        // NEW: render diff between original input and corrected output
+        renderDiffToBox(original, corrected, manualDiffBox);
+        show("manualDiffResult");
+      } catch (e) {
+        showError("manualError", "Lỗi: " + (e?.message || e));
+      } finally {
+        hideLoading();
+      }
+    });
+
+    /* ---------- Copy/Download ---------- */
+    copyBtn.addEventListener("click", async () => {
+      if (!lastCorrect) return;
+      try {
+        await navigator.clipboard.writeText(lastCorrect);
+        const old = copyBtn.textContent;
+        copyBtn.textContent = "✅ Đã copy";
+        setTimeout(() => (copyBtn.textContent = old), 1500);
+      } catch {}
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      if (!lastCorrect) return;
+      const blob = new Blob([lastCorrect], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "corrected_text.txt"; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    /* ---------- UI & Diff helpers ---------- */
+    function resetOcrUI() {
+      ocrError.classList.remove("show"); ocrError.textContent = "";
+      ["ocrResult","correctedResult","diffResult","flagsResult"].forEach(id => hide(id));
+      ocrText.textContent = ""; correctedText.textContent = "";
+      diffBox.innerHTML = ""; flagsBox.innerHTML = "";
+      lastOcr = ""; lastCorrect = ""; lastFlags = [];
+    }
+
+    function tokenize(s) {
+      return (s || "")
+        .replace(/([,.:;!?\"“”'‘’()\[\]{}…])/g, " $1 ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .split(" ")
+        .filter(Boolean);
+    }
+
+    function longestCommonSubsequence(a, b) {
+      const n = a.length, m = b.length;
+      const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+      for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+          dp[i][j] = a[i - 1] === b[j - 1]
+            ? dp[i - 1][j - 1] + 1
+            : Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+      const res = [];
+      let i = n, j = m;
+      while (i > 0 && j > 0) {
+        if (a[i - 1] === b[j - 1]) { res.push(a[i - 1]); i--; j--; }
+        else if (dp[i - 1][j] >= dp[i][j - 1]) { i--; } else { j--; }
+      }
+      return res.reverse();
+    }
+
+    function spanAdd(t){ const el=document.createElement("span"); el.className="add"; el.textContent=t+" "; return el; }
+    function spanDel(t){ const el=document.createElement("span"); el.className="del"; el.textContent=t+" "; return el; }
+    function spanKeep(t){ const el=document.createElement("span"); el.textContent=t+" "; return el; }
+
+    function renderDiff(aStr, bStr) {
+      // Renders into the global diffBox (OCR tab)
+      renderDiffToBox(aStr, bStr, diffBox);
+    }
+
+    function renderDiffToBox(aStr, bStr, boxEl) {
+      const a = tokenize(aStr), b = tokenize(bStr);
+      const lcs = longestCommonSubsequence(a, b);
+      let i=0, j=0, k=0;
+      const frag = document.createDocumentFragment();
+      while (i < a.length || j < b.length) {
+        if (k < lcs.length && i < a.length && j < b.length && a[i] === lcs[k] && b[j] === lcs[k]) {
+          frag.appendChild(spanKeep(a[i])); i++; j++; k++;
+        } else if (j < b.length && (k >= lcs.length || b[j] !== lcs[k])) {
+          frag.appendChild(spanAdd(b[j])); j++;
+        } else if (i < a.length && (k >= lcs.length || a[i] !== lcs[k])) {
+          frag.appendChild(spanDel(a[i])); i++;
+        } else {
+          break;
+        }
+      }
+      boxEl.innerHTML = "";
+      boxEl.appendChild(frag);
+    }
+
+    function renderFlags(text, indices) {
+      const toks = tokenize(text);
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < toks.length; i++) {
+        const span = document.createElement("span");
+        span.textContent = toks[i] + " ";
+        if (indices && indices.includes(i)) {
+          span.className = "flag";
+          span.title = "Nghi ngờ lỗi";
+        }
+        frag.appendChild(span);
+      }
+      flagsBox.innerHTML = "";
+      flagsBox.appendChild(frag);
+    }
+  </script>
+</body>
+</html>

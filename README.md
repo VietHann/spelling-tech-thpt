@@ -3,8 +3,8 @@
 <div align="center">
 
 <p align="center">
-  <img src="docs/images/logo.png" alt="DaiNam University Logo" width="200"/>
-  <img src="docs/images/AIoTLab_logo.png" alt="AIoTLab Logo" width="170"/>
+  <img src="img/logo.png" alt="DaiNam University Logo" width="200"/>
+  <img src="img/AIoTLab_logo.png" alt="AIoTLab Logo" width="170"/>
 </p>
 
 [![Made by AIoTLab](https://img.shields.io/badge/Made%20by%20AIoTLab-blue?style=for-the-badge)](https://fit.dainam.edu.vn)

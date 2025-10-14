@@ -41,7 +41,7 @@ CORR_DIR = os.environ.get("CORR_DIR", "outputs/corr_lora_fast")
 
 # Gán cứng API key vào code như bạn yêu cầu:
 # (Bạn có thể đổi chuỗi này thành khóa thật của bạn)
-GEMINI_API_KEY = "AIzaSyAgwORchd_WXMsnBPVQgKMB9fpr3gXjv6c"
+GEMINI_API_KEY = ""
 GEMINI_MODEL_NAME = "gemini-2.5-pro"  # nhanh & rẻ; có thể đổi "gemini-1.5-pro"
 
 # Thư mục static để phục vụ giao diện
